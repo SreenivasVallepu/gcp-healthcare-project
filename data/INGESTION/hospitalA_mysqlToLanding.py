@@ -1,4 +1,4 @@
-from google.cloud import storage, bigquery
+from google.cloud import storage,bigquery
 import pandas as pd
 from pyspark.sql import SparkSession
 import datetime
@@ -8,33 +8,33 @@ import json
 storage_client = storage.Client()
 bq_client = bigquery.Client()
 
-# Initialize Spark Session
-spark = SparkSession.builder.appName("HospitalAMySQLToLanding").getOrCreate()
+#Initialize Spark Session
+spark = SparkSession.builder.appName("HospitalMySQLToLanding").getOrCreate()
 
-# Google Cloud Storage (GCS) Configuration
+# Google Cloud Storage(GCS) Configuration
 GCS_BUCKET = "healthcare-bucket-146"
 HOSPITAL_NAME = "hospital-a"
 LANDING_PATH = f"gs://{GCS_BUCKET}/landing/{HOSPITAL_NAME}/"
 ARCHIVE_PATH = f"gs://{GCS_BUCKET}/landing/{HOSPITAL_NAME}/archive/"
 CONFIG_FILE_PATH = f"gs://{GCS_BUCKET}/configs/load_config.csv"
 
-# BigQuery Configuration
+# Bigquery Configuration
 BQ_PROJECT = "project-5fd6674f-94d1-4c83-a7c"
 BQ_AUDIT_TABLE = f"{BQ_PROJECT}.temp_dataset.audit_log"
 BQ_LOG_TABLE = f"{BQ_PROJECT}.temp_dataset.pipeline_logs"
-BQ_TEMP_PATH = f"{GCS_BUCKET}/temp/"  
+BQ_TEMP_PATH = f"{GCS_BUCKET}/temp/"
 
 # MySQL Configuration
 MYSQL_CONFIG = {
-    "url": "jdbc:mysql://34.132.104.87:3306/hospital_a_db?useSSL=false&allowPublicKeyRetrieval=true",
-    "driver": "com.mysql.cj.jdbc.Driver",
-    "user": "myuser",
-    "password": "Sreenu@146"
+    "url":"jdbc:mysql://34.29.108.99:3306/hospital_a_db?useSSL=true&trustServerCertificate=true&allowPublicKeyRetrieval=true",
+    "driver":"com.mysql.cj.jdbc.Driver",
+    "user":"myuser",
+    "password":"Sreenu@146"
 }
+##---------------------------------------------------------------------------------------------------##
+#Logging mechanism
+log_entries = [] #Stores logs before writing to GCS
 
-##------------------------------------------------------------------------------------------------------------------##
-# Logging Mechanism
-log_entries = []  # Stores logs before writing to GCS
 
 def log_event(event_type, message, table=None):
     """Log an event and store it in the log list"""
