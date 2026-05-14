@@ -1,4 +1,4 @@
-from google.cloud import storage, bigquery
+from google.cloud import storage,bigquery
 import pandas as pd
 from pyspark.sql import SparkSession
 import datetime
@@ -8,33 +8,33 @@ import json
 storage_client = storage.Client()
 bq_client = bigquery.Client()
 
-# Initialize Spark Session
-spark = SparkSession.builder.appName("HospitalAMySQLToLanding").getOrCreate()
+#Initialize Spark Session
+spark = SparkSession.builder.appName("HospitalMySQLToLanding").getOrCreate()
 
-# Google Cloud Storage (GCS) Configuration
+# Google Cloud Storage(GCS) Configuration
 GCS_BUCKET = "healthcare-bucket-146"
-HOSPITAL_NAME = "hospital-b"
+HOSPITAL_NAME = "hospital-a"
 LANDING_PATH = f"gs://{GCS_BUCKET}/landing/{HOSPITAL_NAME}/"
 ARCHIVE_PATH = f"gs://{GCS_BUCKET}/landing/{HOSPITAL_NAME}/archive/"
 CONFIG_FILE_PATH = f"gs://{GCS_BUCKET}/configs/load_config.csv"
 
-# BigQuery Configuration
-BQ_PROJECT = "project-5fd6674f-94d1-4c83-a7c
+# Bigquery Configuration
+BQ_PROJECT = "project-5fd6674f-94d1-4c83-a7c"
 BQ_AUDIT_TABLE = f"{BQ_PROJECT}.temp_dataset.audit_log"
 BQ_LOG_TABLE = f"{BQ_PROJECT}.temp_dataset.pipeline_logs"
-BQ_TEMP_PATH = f"{GCS_BUCKET}/temp/"  
+BQ_TEMP_PATH = f"{GCS_BUCKET}/temp/"
 
 # MySQL Configuration
 MYSQL_CONFIG = {
-    "url": "jdbc:mysql://34.59.188.6:3306/hospital_b_db?useSSL=false&allowPublicKeyRetrieval=true",
-    "driver": "com.mysql.cj.jdbc.Driver",
-    "user": "myuser",
-    "password": "Sreenu@146"
+    "url":"jdbc:mysql://34.29.108.99:3306/hospital_a_db?useSSL=true&trustServerCertificate=true&allowPublicKeyRetrieval=true",
+    "driver":"com.mysql.cj.jdbc.Driver",
+    "user":"myuser",
+    "password":"Sreenu@146"
 }
+##---------------------------------------------------------------------------------------------------##
+#Logging mechanism
+log_entries = [] #Stores logs before writing to GCS
 
-##------------------------------------------------------------------------------------------------------------------##
-# Logging Mechanism
-log_entries = []  # Stores logs before writing to GCS
 
 def log_event(event_type, message, table=None):
     """Log an event and store it in the log list"""
@@ -109,7 +109,7 @@ def get_latest_watermark(table_name):
     query = f"""
         SELECT MAX(load_timestamp) AS latest_timestamp
         FROM `{BQ_AUDIT_TABLE}`
-        WHERE tablename = '{table_name}' and data_source = "hospital_b_db"
+        WHERE tablename = '{table_name}' and data_source = "hospital_a_db"
     """
     query_job = bq_client.query(query)
     result = query_job.result()
@@ -149,7 +149,7 @@ def extract_and_save_to_landing(table, load_type, watermark_col):
         
         # Insert Audit Entry
         audit_df = spark.createDataFrame([
-            ("hospital_b_db", table, load_type, df.count(), datetime.datetime.now(), "SUCCESS")], 
+            ("hospital_a_db", table, load_type, df.count(), datetime.datetime.now(), "SUCCESS")], 
             ["data_source", "tablename", "load_type", "record_count", "load_timestamp", "status"])
 
         (audit_df.write.format("bigquery")
@@ -174,7 +174,7 @@ def read_config_file():
 config_df = read_config_file()
 
 for row in config_df.collect():
-    if row["is_active"] == '1' and row["datasource"] == "hospital_b_db": 
+    if row["is_active"] == '1' and row["datasource"] == "hospital_a_db": 
         db, src, table, load_type, watermark, _, targetpath = row
         move_existing_files_to_archive(table)
         extract_and_save_to_landing(table, load_type, watermark)
